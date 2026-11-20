@@ -142,3 +142,37 @@ The output showed that AdGuard Home was listening on `192.168.0.161:53` for both
 I then queried the configured LAN address and successfully resolved the domain.
 
 **Outcome:** Verified that the DNS service was operational and identified the reason the initial localhost test failed.
+
+## Automated DNS Health Monitoring
+
+To improve the reliability of my DNS server, I developed a Bash script that monitors AdGuard Home and attempts automatic recovery when DNS resolution fails.
+
+### How It Works
+
+1. Checks whether the AdGuard Home systemd service is active.
+2. Tests DNS resolution against three domains: Google, Cloudflare, and Microsoft.
+3. Retries failed DNS checks across three rounds with five-second intervals.
+4. If local DNS fails, queries external DNS resolvers to determine whether DNS resolution is working outside the local service.
+5. Attempts to restart AdGuard Home when the service is inactive or when local DNS fails while public DNS succeeds.
+6. Enforces a 15-minute cooldown between restart attempts.
+7. Records monitoring and recovery events using the Linux system logger.
+
+### Technologies Used
+
+- Bash scripting
+- Linux systemd
+- DNS utilities (`dig`)
+- Linux logging (`logger`)
+- Automated service recovery
+
+### Source Code
+
+[View DNS Health-Check Script](scripts/adguard-healthcheck.sh)
+
+### Why I Implemented This
+
+I previously experienced interruptions in DNS availability that required manually restarting AdGuard Home through SSH.
+
+I implemented automated health monitoring to identify DNS failures and attempt service recovery without requiring manual intervention.
+
+This project helped me gain experience with Linux service management, Bash scripting, DNS troubleshooting, and infrastructure reliability.
