@@ -1,0 +1,12 @@
+
+[Unit]
+Description=Run AdGuard Home DNS Health Monitor Every Minute
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=1min
+AccuracySec=10s
+Unit=adguard-healthcheck.service
+
+[Install]
+WantedBy=timers.target
