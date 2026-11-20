@@ -237,3 +237,23 @@ The DNS monitoring script is automated using a custom systemd service and timer.
 The systemd timer begins monitoring approximately two minutes after boot and schedules subsequent checks one minute after each execution finishes, subject to timer accuracy settings.
 
 The health-check service runs the Bash script as a one-time task, allowing the system to periodically verify DNS availability without requiring a continuously running monitoring process.
+
+## Project Screenshots and Verification
+
+### 1. AdGuard Home Dashboard
+
+![AdGuard Home Dashboard](screenshots/adguard-dashboard.png)
+
+This screenshot shows my operational AdGuard Home DNS server processing and filtering network traffic. During the captured 24-hour period, the server processed 68,109 DNS queries and blocked 21,157 queries, representing approximately 31% of DNS traffic.
+
+### 2. DNS Resolution Verification
+
+![Successful DNS Resolution](screenshots/dns-resolution-test.png)
+
+I used the `dig` command to verify that my Raspberry Pi successfully resolves DNS queries. The test returned a `NOERROR` status and two IPv4 addresses, confirming successful DNS resolution through AdGuard Home.
+
+### 3. Automated DNS Health Monitoring
+
+![Systemd Health-Check Timer](screenshots/healthcheck-timer.png)
+
+This screenshot verifies that my custom systemd timer is enabled and active. The timer periodically executes a Bash script that checks DNS availability and includes automatic recovery logic with a 15-minute restart cooldown.
