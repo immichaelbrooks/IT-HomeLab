@@ -2,114 +2,82 @@
 
 ## Project Overview
 
-I configured a Raspberry Pi Zero running Raspberry Pi OS to act as a DNS filtering server for my home network using AdGuard Home.
+I configured a Raspberry Pi Zero running Raspberry Pi OS to act as a network-wide DNS filtering server using AdGuard Home.
 
-The purpose of this project was to gain hands-on experience with Linux administration, DNS configuration, network troubleshooting, and service automation.
+The goal of this project was to gain hands-on experience with Linux system administration, DNS configuration, network troubleshooting, firewall management, and service automation.
 
-After experiencing DNS service interruptions, I worked on improving the server's reliability by implementing automated health checks and service recovery using Bash scripting and systemd.
+After experiencing interruptions with DNS availability, I decided to improve the reliability of my setup by developing an automated health-monitoring and recovery solution using Bash scripting and systemd.
+
+This project is part of my personal home lab, where I practice configuring, managing, troubleshooting, and securing network services.
 
 ## Hardware and Software
 
 | Component | Description |
 |---|---|
 | Hardware | Raspberry Pi Zero |
-| Operating System | Raspberry Pi OS (Debian 13/Trixie) |
+| Operating System | Raspberry Pi OS (Debian 13 / Trixie) |
 | DNS Software | AdGuard Home |
 | Firewall | UFW |
 | Automation | Bash and systemd |
 | Remote Administration | SSH |
 | Network Router | TP-Link AXE5400 |
+| DNS Server IP | 192.168.0.161 |
 
-## Network Configuration
+## Network Architecture
 
-The Raspberry Pi operates as a DNS server on my local network.
+My Raspberry Pi acts as the DNS filtering server for devices on my home network.
 
-- **DNS protocol:** UDP/TCP
-- **DNS port:** 53
-- **DNS filtering:** AdGuard Home
-- **Remote management:** SSH
-- **Network:** Private home LAN
+The router continues handling normal network routing, while AdGuard Home processes DNS requests, applies filtering rules, and forwards permitted queries to configured upstream DNS resolvers.
 
-The router continues to handle normal routing and network connectivity while AdGuard Home provides DNS filtering.
+**DNS resolution flow:**
+
+```text
+Home Network Devices
+        |
+        | DNS Queries (UDP/TCP Port 53)
+        v
+Raspberry Pi Zero
+192.168.0.161
+        |
+        v
+AdGuard Home
+        |
+        | DNS Filtering
+        v
+Upstream DNS Resolvers
+        |
+        v
+DNS Responses Returned to Clients
+```
+
+### Network Configuration
+
+- DNS Protocol: UDP and TCP
+- DNS Port: 53
+- DNS Filtering: AdGuard Home
+- Remote Administration: SSH
+- Network Type: Private home LAN
+- DNS Listening Address: 192.168.0.161
 
 ## DNS Server Configuration
 
-Installed and configured AdGuard Home to process DNS queries from network devices.
+I installed and configured AdGuard Home to process DNS queries from devices on my home network.
 
-This allowed me to gain practical experience with DNS resolution, filtering rules, upstream DNS providers, and DNS troubleshooting.
+This allowed me to gain practical experience with:
 
-## Automated Health Monitoring
+- DNS resolution and forwarding
+- DNS-based filtering rules
+- Upstream DNS configuration
+- Network-wide DNS administration
+- DNS query logging and troubleshooting
 
-After encountering issues with DNS availability, I implemented a Bash health-check script.
-
-The script:
-
-1. Checks DNS resolution for multiple domains, including Google, Cloudflare, and Microsoft.
-2. Retries failed DNS checks.
-3. Tests external DNS resolvers to help determine whether the problem is local.
-4. Restarts AdGuard Home when the local DNS service is failing but external resolution is working.
-5. Uses a 15-minute cooldown to prevent repeated automatic restarts.
-
-## Systemd Automation
-
-Configured a systemd service and timer to execute the DNS health-check script approximately every minute.
-
-Also configured systemd to restart the AdGuard Home service after unexpected failures.
-
-This provided two recovery mechanisms:
-
-- Automatic service restart when the application exits unexpectedly.
-- DNS health monitoring to identify failures even when the service process is still running.
-
-## Firewall Configuration
-
-Used UFW to manage network access to the Raspberry Pi.
-
-Configured access for DNS services, remote administration, and the AdGuard Home management interface.
-
-## Troubleshooting Experience
-
-During this project, I investigated several DNS service interruptions.
-
-Troubleshooting included:
-
-- Checking systemd service status.
-- Reviewing AdGuard Home logs.
-- Testing DNS resolution.
-- Investigating upstream DNS connection failures.
-- Reviewing firewall and network settings.
-- Implementing automated recovery to reduce manual intervention.
-
-One issue involved HTTPS-based upstream DNS connection failures, which required investigating TLS and DNS-related errors.
-
-## Skills Demonstrated
-
-- Linux system administration
-- DNS configuration and troubleshooting
-- SSH remote management
-- Bash scripting
-- Systemd services and timers
-- Firewall administration
-- Network service monitoring
-- Automated service recovery
-
-## Future Improvements
-
-- Implement centralized monitoring with Zabbix.
-- Configure alert notifications for DNS outages.
-- Add a secondary DNS server using an HP EliteDesk.
-- Improve monitoring and logging.
-- Document service availability and recovery testing.
-
-## Project Status
-
-Operational home lab project with ongoing monitoring and improvements.
+AdGuard Home provides a web-based dashboard where I can monitor DNS traffic, review blocked requests, and investigate DNS-related issues.
 
 ## DNS Testing and Validation
 
 ### DNS Resolution Test
 
-To verify that AdGuard Home was successfully processing DNS queries, I used the `dig` command to query the Raspberry Pi directly.
+To verify that AdGuard Home was successfully resolving DNS queries, I used the `dig` command to query my Raspberry Pi directly.
 
 **Command:**
 
@@ -119,124 +87,166 @@ dig @192.168.0.161 example.com
 
 **Results:**
 
-- DNS response status: `NOERROR`
-- DNS server: `192.168.0.161`
-- Protocol: UDP port 53
-- Query response time: 50 ms
-- Returned two IPv4 addresses.
+| Test | Result |
+|---|---|
+| DNS Response Status | NOERROR |
+| DNS Server | 192.168.0.161 |
+| Protocol | UDP / Port 53 |
+| Query Response Time | Approximately 50 ms |
+| DNS Records Returned | Two IPv4 addresses |
 
-The successful response confirmed that AdGuard Home was resolving DNS queries through the Raspberry Pi's LAN interface.
+The successful response confirmed that the DNS service was operational and responding to queries through the Raspberry Pi's LAN interface.
 
 ### Troubleshooting Localhost DNS Resolution
 
-During testing, a query to `127.0.0.1` returned a connection refused error.
+During testing, I initially attempted to query the DNS service using the localhost address:
 
-I investigated the issue using:
+```bash
+dig @127.0.0.1 example.com
+```
+
+This returned a connection refused error.
+
+To investigate the issue, I checked which network interfaces AdGuard Home was listening on.
+
+**Command:**
 
 ```bash
 sudo ss -lntup | grep ':53'
 ```
 
-The output showed that AdGuard Home was listening on `192.168.0.161:53` for both TCP and UDP, rather than `127.0.0.1:53`.
+The output showed that AdGuard Home was listening on `192.168.0.161:53` for both TCP and UDP rather than `127.0.0.1:53`.
 
-I then queried the configured LAN address and successfully resolved the domain.
+I then repeated the DNS query using the configured LAN address and successfully resolved the domain.
 
-**Outcome:** Verified that the DNS service was operational and identified the reason the initial localhost test failed.
+**Outcome:** Confirmed that the DNS service was functioning correctly and identified why the localhost query failed.
 
 ## Automated DNS Health Monitoring
 
-To improve the reliability of my DNS server, I developed a Bash script that monitors AdGuard Home and attempts automatic recovery when DNS resolution fails.
+After experiencing DNS interruptions that required manually restarting AdGuard Home through SSH, I developed a Bash health-check script to monitor DNS availability and attempt automatic recovery.
 
-### How It Works
+### How the Script Works
 
 1. Checks whether the AdGuard Home systemd service is active.
-2. Tests DNS resolution against three domains: Google, Cloudflare, and Microsoft.
-3. Retries failed DNS checks across three rounds with five-second intervals.
-4. If local DNS fails, queries external DNS resolvers to determine whether DNS resolution is working outside the local service.
-5. Attempts to restart AdGuard Home when the service is inactive or when local DNS fails while public DNS succeeds.
-6. Enforces a 15-minute cooldown between restart attempts.
+2. Tests DNS resolution against Google, Cloudflare, and Microsoft.
+3. Retries failed DNS checks across three rounds, with five-second intervals.
+4. If local DNS fails, checks external DNS resolvers to help determine whether the issue is local.
+5. Attempts to restart AdGuard Home when the service is inactive or local DNS fails while external DNS resolution succeeds.
+6. Enforces a 15-minute cooldown between restart attempts to prevent repeated restarts.
 7. Records monitoring and recovery events using the Linux system logger.
-
-### Technologies Used
-
-- Bash scripting
-- Linux systemd
-- DNS utilities (`dig`)
-- Linux logging (`logger`)
-- Automated service recovery
-
-### Source Code
-
-[View DNS Health-Check Script](scripts/adguard-healthcheck.sh)
 
 ### Why I Implemented This
 
-I previously experienced interruptions in DNS availability that required manually restarting AdGuard Home through SSH.
+Because AdGuard Home provides DNS filtering for my home network, interruptions in DNS availability can affect the ability of devices to resolve domain names.
 
-I implemented automated health monitoring to identify DNS failures and attempt service recovery without requiring manual intervention.
+Instead of relying entirely on manual intervention, I wanted to create a solution that could detect service problems and attempt recovery automatically.
 
-This project helped me gain experience with Linux service management, Bash scripting, DNS troubleshooting, and infrastructure reliability.
+This gave me practical experience with Bash scripting, troubleshooting, service monitoring, and infrastructure reliability.
 
-## Systemd Automation and Validation
+## Systemd Automation
 
-To automate DNS health monitoring, I configured a custom systemd service and timer.
+To automate the monitoring process, I created a custom systemd service and timer.
 
-The timer periodically executes my Bash health-check script to verify AdGuard Home service availability and DNS resolution.
+The service executes the Bash health-check script, while the timer schedules recurring checks.
 
-### Timer Configuration
+### Configuration
 
-- **Timer:** `adguard-healthcheck.timer`
-- **Service:** `adguard-healthcheck.service`
-- **Status:** Enabled and active
-- **Execution frequency:** Approximately every minute
-- **Health-check script:** `/usr/local/bin/adguard-healthcheck.sh`
+| Component | Configuration |
+|---|---|
+| Timer | `adguard-healthcheck.timer` |
+| Service | `adguard-healthcheck.service` |
+| Script | `/usr/local/bin/adguard-healthcheck.sh` |
+| Timer Status | Enabled and active |
+| Initial Execution | Approximately 2 minutes after boot |
+| Recurring Execution | 1 minute after the previous service execution finishes |
+| Restart Cooldown | 15 minutes |
+
+The timer uses `OnBootSec=2min` and `OnUnitInactiveSec=1min`, with `AccuracySec=10s`.
+
+The health-check service uses `Type=oneshot`, meaning it executes the script and exits rather than running continuously.
 
 ### Verification Commands
 
-Check the timer:
+**Check timer status:**
 
 ```bash
 systemctl status adguard-healthcheck.timer --no-pager
 ```
 
-Review service execution history:
+**Review health-check execution history:**
 
 ```bash
 sudo journalctl -u adguard-healthcheck.service -n 20 --no-pager
 ```
 
+**Inspect the service configuration:**
+
+```bash
+sudo systemctl cat adguard-healthcheck.service
+```
+
+**Inspect the timer configuration:**
+
+```bash
+sudo systemctl cat adguard-healthcheck.timer
+```
+
 ### Testing Results
 
-On November 19, 2026, I verified that the timer was active and repeatedly executing the health-check service.
+On November 19, 2026, I verified that the timer was enabled, active, and repeatedly executing the health-check service.
 
-Systemd journal entries showed successful service executions between 9:01 PM and 9:08 PM.
+Systemd journal entries showed successful executions between approximately 9:01 PM and 9:08 PM.
 
-Each execution completed without a reported systemd service failure.
+These results confirmed that the monitoring automation was running as scheduled.
 
-These results confirm that the monitoring automation is operational.
+**Testing limitation:** Although the Bash script includes automatic restart logic, I have not yet documented a complete end-to-end recovery test involving a simulated DNS outage.
 
-**Note:** Automatic restart logic is implemented in the Bash script, but an end-to-end recovery test has not yet been documented.
+## Firewall Configuration
 
-### Skills Demonstrated
+I configured UFW to manage network access to the Raspberry Pi and limit unnecessary inbound connections.
 
-- Linux systemd administration
-- Scheduled service automation
-- Bash scripting
-- Log analysis
-- Infrastructure health monitoring
-- Service reliability management
+The firewall uses a default-deny policy for incoming traffic while allowing required network services.
 
-### Systemd Configuration Files
+### Permitted Services
 
-The DNS monitoring script is automated using a custom systemd service and timer.
+| Service | Port | Purpose |
+|---|---|---|
+| DNS | 53 UDP/TCP | DNS resolution |
+| SSH | 22 TCP | Remote administration |
+| HTTP | 80 TCP | Web access |
+| AdGuard Management | 3000 TCP | AdGuard Home management interface |
 
-- [View Health-Check Service](systemd/adguard-healthcheck.service)
-- [View Health-Check Timer](systemd/adguard-healthcheck.timer)
-- [View Bash Health-Check Script](scripts/adguard-healthcheck.sh)
+The configured rules allow these services from the private `192.168.0.0/24` network.
 
-The systemd timer begins monitoring approximately two minutes after boot and schedules subsequent checks one minute after each execution finishes, subject to timer accuracy settings.
+This helped me gain experience with Linux firewall rules, network access control, and securing network services.
 
-The health-check service runs the Bash script as a one-time task, allowing the system to periodically verify DNS availability without requiring a continuously running monitoring process.
+## Troubleshooting Experience
+
+Throughout this project, I investigated several DNS-related issues and worked to improve the reliability of the server.
+
+My troubleshooting process included:
+
+- Checking systemd service status and execution history.
+- Reviewing AdGuard Home logs.
+- Testing DNS resolution using `dig`.
+- Checking listening ports and network interfaces.
+- Investigating upstream DNS connectivity and TLS-related errors.
+- Reviewing UFW firewall rules.
+- Developing automated health checks to reduce manual intervention.
+
+One issue involved HTTPS-based upstream DNS connection failures, which led me to investigate DNS-over-HTTPS connectivity and TLS-related errors.
+
+These experiences helped me become more comfortable diagnosing network services and using Linux command-line troubleshooting tools.
+
+## Source Code and Configuration Files
+
+The following files contain the custom monitoring automation used in this project.
+
+- [DNS Health-Check Bash Script](scripts/adguard-healthcheck.sh)
+- [Systemd Health-Check Service](systemd/adguard-healthcheck.service)
+- [Systemd Health-Check Timer](systemd/adguard-healthcheck.timer)
+
+The Bash script performs DNS health checks and implements restart logic, while the systemd service and timer handle scheduled execution.
 
 ## Project Screenshots and Verification
 
@@ -244,16 +254,55 @@ The health-check service runs the Bash script as a one-time task, allowing the s
 
 ![AdGuard Home Dashboard](screenshots/adguard-dashboard.png)
 
-This screenshot shows my operational AdGuard Home DNS server processing and filtering network traffic. During the captured 24-hour period, the server processed 68,109 DNS queries and blocked 21,157 queries, representing approximately 31% of DNS traffic.
+This screenshot shows my operational AdGuard Home DNS server processing and filtering network traffic.
+
+During the captured 24-hour period, the server processed **68,109 DNS queries** and blocked **21,157 queries**, representing approximately **31% of DNS traffic**.
 
 ### 2. DNS Resolution Verification
 
 ![Successful DNS Resolution](screenshots/dns-resolution-test.png)
 
-I used the `dig` command to verify that my Raspberry Pi successfully resolves DNS queries. The test returned a `NOERROR` status and two IPv4 addresses, confirming successful DNS resolution through AdGuard Home.
+I used the `dig` command to verify that my Raspberry Pi successfully resolves DNS queries.
+
+The test returned a `NOERROR` status and two IPv4 addresses, confirming successful DNS resolution through AdGuard Home.
 
 ### 3. Automated DNS Health Monitoring
 
 ![Systemd Health-Check Timer](screenshots/healthcheck-timer.png)
 
-This screenshot verifies that my custom systemd timer is enabled and active. The timer periodically executes a Bash script that checks DNS availability and includes automatic recovery logic with a 15-minute restart cooldown.
+This screenshot verifies that my custom systemd timer is enabled and active.
+
+The timer periodically executes a Bash script that checks DNS availability and includes automatic recovery logic with a 15-minute restart cooldown.
+
+## Skills Demonstrated
+
+- Linux system administration
+- DNS server configuration and troubleshooting
+- Network-wide DNS filtering
+- SSH remote administration
+- Bash scripting and automation
+- Systemd service and timer management
+- UFW firewall configuration
+- Linux logging and troubleshooting
+- Network service monitoring
+- Automated service recovery design
+- Technical documentation
+
+## Future Improvements
+
+As I continue developing my home lab, I plan to expand this project with additional monitoring and reliability features.
+
+- Implement centralized monitoring using Zabbix.
+- Configure automated notifications for DNS outages.
+- Add a secondary DNS server using an HP EliteDesk.
+- Improve centralized logging and service monitoring.
+- Perform and document an end-to-end automated recovery test.
+- Track DNS service availability and recovery performance.
+
+## Project Status
+
+**Operational — Ongoing Improvements**
+
+The Raspberry Pi is currently functioning as a DNS filtering server on my home network.
+
+DNS resolution and scheduled health-check execution have been verified. Additional recovery testing, monitoring, and redundancy improvements are planned as I continue expanding my home lab.
