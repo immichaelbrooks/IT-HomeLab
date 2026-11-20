@@ -104,3 +104,41 @@ One issue involved HTTPS-based upstream DNS connection failures, which required 
 ## Project Status
 
 Operational home lab project with ongoing monitoring and improvements.
+
+## DNS Testing and Validation
+
+### DNS Resolution Test
+
+To verify that AdGuard Home was successfully processing DNS queries, I used the `dig` command to query the Raspberry Pi directly.
+
+**Command:**
+
+```bash
+dig @192.168.0.161 example.com
+```
+
+**Results:**
+
+- DNS response status: `NOERROR`
+- DNS server: `192.168.0.161`
+- Protocol: UDP port 53
+- Query response time: 50 ms
+- Returned two IPv4 addresses.
+
+The successful response confirmed that AdGuard Home was resolving DNS queries through the Raspberry Pi's LAN interface.
+
+### Troubleshooting Localhost DNS Resolution
+
+During testing, a query to `127.0.0.1` returned a connection refused error.
+
+I investigated the issue using:
+
+```bash
+sudo ss -lntup | grep ':53'
+```
+
+The output showed that AdGuard Home was listening on `192.168.0.161:53` for both TCP and UDP, rather than `127.0.0.1:53`.
+
+I then queried the configured LAN address and successfully resolved the domain.
+
+**Outcome:** Verified that the DNS service was operational and identified the reason the initial localhost test failed.
