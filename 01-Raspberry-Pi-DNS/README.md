@@ -225,3 +225,15 @@ These results confirm that the monitoring automation is operational.
 - Log analysis
 - Infrastructure health monitoring
 - Service reliability management
+
+### Systemd Configuration Files
+
+The DNS monitoring script is automated using a custom systemd service and timer.
+
+- [View Health-Check Service](systemd/adguard-healthcheck.service)
+- [View Health-Check Timer](systemd/adguard-healthcheck.timer)
+- [View Bash Health-Check Script](scripts/adguard-healthcheck.sh)
+
+The systemd timer begins monitoring approximately two minutes after boot and schedules subsequent checks one minute after each execution finishes, subject to timer accuracy settings.
+
+The health-check service runs the Bash script as a one-time task, allowing the system to periodically verify DNS availability without requiring a continuously running monitoring process.
