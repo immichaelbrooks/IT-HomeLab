@@ -176,3 +176,52 @@ I previously experienced interruptions in DNS availability that required manuall
 I implemented automated health monitoring to identify DNS failures and attempt service recovery without requiring manual intervention.
 
 This project helped me gain experience with Linux service management, Bash scripting, DNS troubleshooting, and infrastructure reliability.
+
+## Systemd Automation and Validation
+
+To automate DNS health monitoring, I configured a custom systemd service and timer.
+
+The timer periodically executes my Bash health-check script to verify AdGuard Home service availability and DNS resolution.
+
+### Timer Configuration
+
+- **Timer:** `adguard-healthcheck.timer`
+- **Service:** `adguard-healthcheck.service`
+- **Status:** Enabled and active
+- **Execution frequency:** Approximately every minute
+- **Health-check script:** `/usr/local/bin/adguard-healthcheck.sh`
+
+### Verification Commands
+
+Check the timer:
+
+```bash
+systemctl status adguard-healthcheck.timer --no-pager
+```
+
+Review service execution history:
+
+```bash
+sudo journalctl -u adguard-healthcheck.service -n 20 --no-pager
+```
+
+### Testing Results
+
+On November 19, 2026, I verified that the timer was active and repeatedly executing the health-check service.
+
+Systemd journal entries showed successful service executions between 9:01 PM and 9:08 PM.
+
+Each execution completed without a reported systemd service failure.
+
+These results confirm that the monitoring automation is operational.
+
+**Note:** Automatic restart logic is implemented in the Bash script, but an end-to-end recovery test has not yet been documented.
+
+### Skills Demonstrated
+
+- Linux systemd administration
+- Scheduled service automation
+- Bash scripting
+- Log analysis
+- Infrastructure health monitoring
+- Service reliability management
